@@ -1,8 +1,11 @@
+require("dotenv").config();
 const express = require("express");
 const fs = require("fs");
 const app = express();
 const dataFile = "data.json";
-const data = JSON.parse(fs.readFileSync(dataFile));
+const expiration_time = process.env.EXPIRATION_TIME * 60000;
+var data = {};
+if (fs.existsSync(dataFile)) data = JSON.parse(fs.readFileSync(dataFile));
 app.get("/:app?/:room?/:peerid?/:username?", (req, res) => {
   const { app, room, peerid, username, remove } = req.params;
   if (!app) {
@@ -14,7 +17,29 @@ app.get("/:app?/:room?/:peerid?/:username?", (req, res) => {
   }
   const time = Date.now();
   const { password } = req.query;
+  Object.keys(data).forEach(appid => {
+    if (time - data[appid].tick > expiration_time) {
+      delete data[appid];
+      return;
+    }
+    Object.keys(data[appid].rooms).forEach(roomid => {
+      if (time - data[appid].rooms[roomid].tick > expiration_time) {
+        delete data[appid].rooms[roomid];
+        return;
+      }
+      Object.keys(data[appid].rooms[roomid].users).forEach(peerid => {
+        if (
+          time - data[appid].rooms[roomid].users[peerid].tick >
+          expiration_time
+        ) {
+          delete data[appid].rooms[roomid].users[peerid];
+          return;
+        }
+      });
+    });
+  });
   if (!data[app]) data[app] = { rooms: {} };
+
   data[app].tick = time;
   if (!room) {
     res.json(
@@ -76,6 +101,6 @@ app.get("/:app?/:room?/:peerid?/:username?", (req, res) => {
   );
 });
 
-app.listen(8030, () => {
-  console.log("running");
+app.listen(process.env.PORT, () => {
+  console.log(`running on port ${process.env.PORT}`);
 });
