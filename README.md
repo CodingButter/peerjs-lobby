@@ -1,5 +1,8 @@
 # peerjs-lobby
 
+## Publicly hosted
+https://beastcraft.codingbutter.com:8888/
+
 A simple server for creating lobbies for peerjs websocket applications.
 
 ## Installation
